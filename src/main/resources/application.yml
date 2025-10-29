@@ -3,9 +3,9 @@ spring:
     name: java-hairinjob
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/hairinjob}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:password}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/hairinjob}
+    username: ${DB_USER:hairinjob_user}
+    password: ${DB_PASSWORD:hairinjob2024!}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -32,10 +32,11 @@ spring:
 
 logging:
   level:
-    root: INFO
-    org.nicenomu.hairinjob: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    root: ERROR
+    org.nicenomu.hairinjob: INFO
+    org.springframework.boot: ERROR
+    org.hibernate: ERROR
+    com.zaxxer.hikari: ERROR
 
 scraper:
   target-url: https://www.hairinjob.com

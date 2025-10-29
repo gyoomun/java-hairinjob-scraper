@@ -18,7 +18,7 @@ public class ScrapeSessionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "started_at", nullable = false)
     private LocalDateTime startedAt;

@@ -31,12 +31,18 @@ public class JobScrapingOrchestratorService {
     private final JobPostingRepository jobPostingRepository;
 
     @Transactional
-    public void scrapeAll(boolean skipPages) {
+    public void scrapeAll(boolean skipPages, String storage) {
         LocalDateTime startTime = LocalDateTime.now();
         log.info("\n{'='*80}");
         log.info("HairinJob 스크래핑 시작");
         log.info("시작 시간: {}", startTime);
+        log.info("저장 방식: {}", storage);
         log.info("{'='*80}");
+
+        // TODO: JSON, both 저장 방식 구현 필요
+        if (!"db".equals(storage)) {
+            log.warn("현재 DB 저장만 지원합니다. storage 옵션 무시: {}", storage);
+        }
 
         try {
             // 1. Playwright 브라우저 초기화 및 쿠키 추출
@@ -173,5 +179,51 @@ public class JobScrapingOrchestratorService {
             }
         }
         log.info("✓ {}개 / {}개 저장 완료", saved, jobs.size());
+    }
+
+    public void collectCookies() {
+        log.info("Playwright 브라우저 실행 및 쿠키 수집...");
+        try {
+            Map<String, String> cookies = playwrightManager.initializeAndGetCookies();
+            log.info("✓ 쿠키 수집 완료: {}개", cookies.size());
+            cookies.forEach((key, value) -> log.info("  {} = {}", key, value));
+        } finally {
+            playwrightManager.closeBrowser();
+        }
+    }
+
+    public void testPage() {
+        log.info("1페이지 테스트 시작...");
+        try {
+            Map<String, String> cookies = playwrightManager.initializeAndGetCookies();
+            int totalPages = pageScrapingService.detectTotalPages(cookies);
+            log.info("✓ 전체 페이지 수: {}", totalPages);
+
+            // 1페이지만 스크래핑
+            CompletableFuture<List<JobPostingDTO>> future = pageScrapingService.scrapePagesAsync(
+                    1, cookies, 1, 1, null
+            );
+            List<JobPostingDTO> jobs = future.get();
+            log.info("✓ 1페이지 수집 완료: {}개", jobs.size());
+
+            jobs.forEach(job -> log.info("  [{}] {}", job.getIdx(), job.getTitle()));
+        } catch (Exception e) {
+            log.error("페이지 테스트 중 오류", e);
+        } finally {
+            playwrightManager.closeBrowser();
+        }
+    }
+
+    public void testDetail() {
+        log.info("상세페이지 테스트 시작 (idx=101200)...");
+        try {
+            Map<String, String> cookies = playwrightManager.initializeAndGetCookies();
+
+            // TODO: 실제 상세페이지 URL 조회 필요
+            log.warn("TODO: 상세페이지 테스트 기능 구현 필요");
+
+        } finally {
+            playwrightManager.closeBrowser();
+        }
     }
 }

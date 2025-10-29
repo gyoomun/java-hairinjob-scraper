@@ -39,10 +39,13 @@ public class PlaywrightManager {
             );
 
             Path userDataDir = Paths.get(scraperProperties.getBrowser().getUserDataDir());
-            context = browser.newContext(
-                    new Browser.NewContextOptions()
-                            .setStorageStatePath(userDataDir.resolve("storage-state.json"))
-            );
+            Path storageStatePath = userDataDir.resolve("storage-state.json");
+
+            Browser.NewContextOptions contextOptions = new Browser.NewContextOptions();
+            if (Files.exists(storageStatePath)) {
+                contextOptions.setStorageStatePath(storageStatePath);
+            }
+            context = browser.newContext(contextOptions);
 
             Page page = context.newPage();
             page.navigate(GlobalConstants.BASE_URL);
@@ -56,6 +59,11 @@ public class PlaywrightManager {
             if (!isLoggedIn) {
                 log.info("로그인이 필요합니다. 로그인 진행...");
                 performLogin(page);
+
+                // 로그인 후 storage state 저장
+                context.storageState(new BrowserContext.StorageStateOptions()
+                        .setPath(storageStatePath));
+                log.info("✓ Storage state 저장 완료: {}", storageStatePath);
             } else {
                 log.info("이미 로그인되어 있습니다.");
             }
