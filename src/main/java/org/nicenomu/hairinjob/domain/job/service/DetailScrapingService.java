@@ -83,7 +83,7 @@ public class DetailScrapingService {
                     int delay = scraperProperties.getRequestDelayMinMs()
                             + random.nextInt(scraperProperties.getRequestDelayMaxMs()
                             - scraperProperties.getRequestDelayMinMs());
-                    log.info("  ⏱️  {:.2f}초 대기 중...", delay / 1000.0);
+                    log.info("  ⏱️  {}초 대기 중...", String.format("%.2f", delay / 1000.0));
                     Thread.sleep(delay);
                 }
 

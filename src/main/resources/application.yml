@@ -37,6 +37,8 @@ logging:
     org.springframework.boot: ERROR
     org.hibernate: ERROR
     com.zaxxer.hikari: ERROR
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %msg%n"
 
 scraper:
   target-url: https://www.hairinjob.com

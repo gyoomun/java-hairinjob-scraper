@@ -47,8 +47,8 @@ public class PageScrapingService {
                 int currentIndex = pageNum - startPage + 1;
                 double progress = (currentIndex * 100.0) / totalPages;
 
-                log.info("  [{}] [{}/{}] 페이지 {} 스크래핑 중... ({:.1f}%)",
-                        cookieIdx, currentIndex, totalPages, pageNum, progress);
+                log.info("  [{}] [{}/{}] 페이지 {} 스크래핑 중... ({}%)",
+                        cookieIdx, currentIndex, totalPages, pageNum, String.format("%.1f", progress));
 
                 // URL 및 Referer 구성
                 String url;
