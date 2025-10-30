@@ -47,9 +47,9 @@ public class DetailScrapingService {
             log.info("[{}/{}] idx={} - {} 스크래핑 중...", i + 1, jobs.size(), job.getIdx(), job.getTitle());
 
             try {
-                // 쿠키 갱신 체크 (20분마다)
+                // 쿠키 갱신 체크 (5분마다)
                 if (Duration.between(lastCookieRefresh, Instant.now()).compareTo(cookieRefreshInterval) > 0) {
-                    log.info("\n🔄 쿠키 갱신 필요 (20분 경과)");
+                    log.info("\n🔄 쿠키 갱신 필요 ({}분 경과)", scraperProperties.getCookieRefreshIntervalMinutes());
                     log.info("⏸️  상세페이지 스크래핑 일시 중지 - 로그인 유지 쿠키 보존 절차 시작");
 
                     // PlaywrightManager에서 쿠키 재갱신 (새로고침 + 로그인 확인 + 재로그인 + 쿠키 추출)
