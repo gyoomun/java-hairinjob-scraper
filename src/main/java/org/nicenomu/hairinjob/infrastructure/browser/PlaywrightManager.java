@@ -52,9 +52,20 @@ public class PlaywrightManager {
             page.waitForLoadState();
             Thread.sleep(GlobalConstants.PAGE_LOAD_WAIT_MS);
 
-            // 로그인 상태 확인
-            String currentUrl = page.url();
-            boolean isLoggedIn = currentUrl.contains("mypage") || !currentUrl.contains("login");
+            // 로그인 상태 확인 (페이지 HTML에서 URL 존재 여부로 판단)
+            String pageContent = page.content();
+            boolean isLoggedIn;
+
+            if (pageContent.contains(GlobalConstants.LOGOUT_URL)) {
+                isLoggedIn = true;
+                log.info("✅ 로그인 상태: 로그인됨");
+            } else if (pageContent.contains(GlobalConstants.LOGIN_URL)) {
+                isLoggedIn = false;
+                log.info("❌ 로그인 상태: 로그인 안됨");
+            } else {
+                isLoggedIn = false;
+                log.warn("⚠️ 로그인 상태: 확인 불가 (페이지 구조 변경 가능성)");
+            }
 
             if (!isLoggedIn) {
                 log.info("로그인이 필요합니다. 로그인 진행...");
@@ -114,7 +125,51 @@ public class PlaywrightManager {
         if (context == null) {
             throw new IllegalStateException("BrowserContext가 초기화되지 않았습니다.");
         }
-        return extractCookies();
+
+        try {
+            // 페이지 새로고침
+            Page page = context.pages().get(0);
+            page.navigate(GlobalConstants.BASE_URL);
+            page.waitForLoadState();
+            Thread.sleep(GlobalConstants.PAGE_LOAD_WAIT_MS);
+
+            // 로그인 상태 확인 (페이지 HTML에서 URL 존재 여부로 판단)
+            String pageContent = page.content();
+            boolean isLoggedIn;
+
+            if (pageContent.contains(GlobalConstants.LOGOUT_URL)) {
+                isLoggedIn = true;
+                log.info("✅ 로그인 상태: 로그인됨");
+            } else if (pageContent.contains(GlobalConstants.LOGIN_URL)) {
+                isLoggedIn = false;
+                log.info("❌ 로그인 상태: 로그인 안됨");
+            } else {
+                isLoggedIn = false;
+                log.warn("⚠️ 로그인 상태: 확인 불가 (페이지 구조 변경 가능성)");
+            }
+
+            // 로그인 안되어 있으면 재로그인
+            if (!isLoggedIn) {
+                log.info("로그인이 필요합니다. 재로그인 진행...");
+                performLogin(page);
+
+                // 로그인 후 storage state 저장
+                Path userDataDir = Paths.get(scraperProperties.getBrowser().getUserDataDir());
+                Path storageStatePath = userDataDir.resolve("storage-state.json");
+                context.storageState(new BrowserContext.StorageStateOptions()
+                        .setPath(storageStatePath));
+                log.info("✓ Storage state 갱신 완료: {}", storageStatePath);
+            }
+
+            // 새 쿠키 추출
+            Map<String, String> cookies = extractCookies();
+            log.info("✓ 쿠키 갱신 완료 (총 {}개)", cookies.size());
+            return cookies;
+
+        } catch (Exception e) {
+            log.error("쿠키 갱신 중 오류 발생", e);
+            throw new RuntimeException("쿠키 갱신 실패", e);
+        }
     }
 
     private void checkAndCleanupUserData() {

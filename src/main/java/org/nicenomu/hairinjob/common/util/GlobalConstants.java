@@ -11,6 +11,7 @@ public class GlobalConstants {
     public static final String LIST_PAGE_URL = BASE_URL + "/cms/s01.php";
     public static final String DETAIL_PAGE_URL = BASE_URL + "/cms/s01_v.php";
     public static final String LOGIN_URL = BASE_URL + "/cms/user/login.php";
+    public static final String LOGOUT_URL = BASE_URL + "/member/login_ok.php?del=1";
     public static final String MYPAGE_URL = BASE_URL + "/cms/p/mypage.php";
 
     // 스크래핑 설정

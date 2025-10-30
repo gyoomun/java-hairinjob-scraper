@@ -6,6 +6,7 @@ import org.nicenomu.hairinjob.common.config.ScraperProperties;
 import org.nicenomu.hairinjob.domain.job.model.dto.DetailInfoDTO;
 import org.nicenomu.hairinjob.domain.job.model.entity.JobPostingEntity;
 import org.nicenomu.hairinjob.domain.job.repository.JobPostingRepository;
+import org.nicenomu.hairinjob.infrastructure.browser.PlaywrightManager;
 import org.nicenomu.hairinjob.infrastructure.http.HttpClientService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ public class DetailScrapingService {
     private final JobPostingRepository jobPostingRepository;
     private final HttpClientService httpClientService;
     private final HtmlParserService htmlParserService;
+    private final PlaywrightManager playwrightManager;
     private final ScraperProperties scraperProperties;
     private final Random random = new Random();
 
@@ -47,8 +49,15 @@ public class DetailScrapingService {
                 // 쿠키 갱신 체크 (20분마다)
                 if (Duration.between(lastCookieRefresh, Instant.now()).compareTo(cookieRefreshInterval) > 0) {
                     log.info("\n🔄 쿠키 갱신 필요 (20분 경과)");
-                    // TODO: PlaywrightManager에서 쿠키 재갱신
+                    log.info("⏸️  상세페이지 스크래핑 일시 중지 - 로그인 유지 쿠키 보존 절차 시작");
+
+                    // PlaywrightManager에서 쿠키 재갱신 (새로고침 + 로그인 확인 + 재로그인 + 쿠키 추출)
+                    Map<String, String> refreshedCookies = playwrightManager.refreshCookies();
+                    cookies.clear();
+                    cookies.putAll(refreshedCookies);
+
                     lastCookieRefresh = Instant.now();
+                    log.info("▶️  상세페이지 스크래핑 재개");
                 }
 
                 // HTML 가져오기
