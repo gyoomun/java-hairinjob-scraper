@@ -2,6 +2,7 @@ package org.nicenomu.hairinjob.domain.job.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nicenomu.hairinjob.common.exception.GlobalExceptionHandler;
 import org.nicenomu.hairinjob.common.util.GlobalConstants;
 import org.nicenomu.hairinjob.domain.job.model.dto.JobPostingDTO;
 import org.nicenomu.hairinjob.domain.job.model.entity.JobPostingEntity;
@@ -57,6 +58,9 @@ public class JobScrapingOrchestratorService {
                 log.info("\n[2단계] 스크래핑 세션 생성...");
                 session = createSession();
 
+                // 세션 ID를 전역 에러 핸들러에 등록
+                GlobalExceptionHandler.setCurrentSessionId(session.getId());
+
                 // 3. 전체 페이지 수 감지
                 log.info("\n[3단계] 전체 페이지 수 감지...");
                 int totalPages = pageScrapingService.detectTotalPages(cookies);
@@ -91,8 +95,10 @@ public class JobScrapingOrchestratorService {
 
         } catch (Exception e) {
             log.error("스크래핑 중 오류 발생", e);
+            GlobalExceptionHandler.handleException(e, "scrapeAll() 메서드 실행 중 오류");
             throw new RuntimeException("스크래핑 실패", e);
         } finally {
+            GlobalExceptionHandler.clearCurrentSessionId();
             playwrightManager.closeBrowser();
         }
     }

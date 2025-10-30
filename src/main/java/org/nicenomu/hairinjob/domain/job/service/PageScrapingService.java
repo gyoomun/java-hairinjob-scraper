@@ -2,6 +2,7 @@ package org.nicenomu.hairinjob.domain.job.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nicenomu.hairinjob.common.exception.GlobalExceptionHandler;
 import org.nicenomu.hairinjob.common.config.ScraperProperties;
 import org.nicenomu.hairinjob.common.util.GlobalConstants;
 import org.nicenomu.hairinjob.domain.job.model.dto.JobPostingDTO;
@@ -93,6 +94,7 @@ public class PageScrapingService {
 
         } catch (Exception e) {
             log.error("쿠키 세트 {} 스크래핑 중 오류", cookieIdx, e);
+            GlobalExceptionHandler.handleException(e, String.format("쿠키 세트 %d 페이지 스크래핑 중 오류 (페이지 범위: %d~%d)", cookieIdx, startPage, endPage));
             return CompletableFuture.failedFuture(e);
         }
     }
@@ -106,6 +108,7 @@ public class PageScrapingService {
             return totalPages;
         } catch (Exception e) {
             log.error("페이지 수 감지 실패", e);
+            GlobalExceptionHandler.handleException(e, "전체 페이지 수 감지 중 오류");
             throw new RuntimeException("페이지 수 감지 실패", e);
         }
     }

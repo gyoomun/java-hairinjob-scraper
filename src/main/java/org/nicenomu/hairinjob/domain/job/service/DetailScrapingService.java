@@ -2,6 +2,7 @@ package org.nicenomu.hairinjob.domain.job.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nicenomu.hairinjob.common.exception.GlobalExceptionHandler;
 import org.nicenomu.hairinjob.common.config.ScraperProperties;
 import org.nicenomu.hairinjob.common.util.GlobalConstants;
 import org.nicenomu.hairinjob.domain.job.model.dto.DetailInfoDTO;
@@ -95,6 +96,7 @@ public class DetailScrapingService {
 
             } catch (Exception e) {
                 log.warn("  ⚠ idx={} 오류: {}", job.getIdx(), e.getMessage());
+                GlobalExceptionHandler.handleException(e, String.format("상세페이지 스크래핑 오류 (idx=%d, title=%s)", job.getIdx(), job.getTitle()));
             }
         }
 
