@@ -58,12 +58,19 @@ public class DetailScrapingService {
                     cookies.clear();
                     cookies.putAll(refreshedCookies);
 
+                    // 쿠키 갱신 확인 로그
+                    log.info("✓ 쿠키 교체 완료 - 현재 cookies Map 크기: {}", cookies.size());
+                    log.info("  주요 쿠키: PHPSESSID={}", cookies.getOrDefault("PHPSESSID", "없음"));
+
                     lastCookieRefresh = Instant.now();
                     log.info("▶️  상세페이지 스크래핑 재개");
                 }
 
                 // HTML 가져오기 (Referer는 목록 페이지)
                 String html = httpClientService.get(job.getDetailUrl(), cookies, GlobalConstants.LIST_PAGE_URL);
+
+                // HTML 크기 로그 (디버깅용)
+                log.info("  HTML 크기: {}자", html.length());
 
                 // 파싱
                 DetailInfoDTO detailInfo = htmlParserService.parseDetailPage(html, job.getIdx());
