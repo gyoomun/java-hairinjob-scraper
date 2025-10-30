@@ -21,8 +21,8 @@ public class RestClientConfig {
     @Bean
     public ClientHttpRequestFactory clientHttpRequestFactory() {
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory();
-        // Python과 동일하게 무제한 타임아웃 (Duration.ZERO = 무제한)
-        factory.setReadTimeout(Duration.ZERO);
+        // Python과 동일하게 무제한 타임아웃 (Duration.ofDays(1) = 사실상 무제한)
+        factory.setReadTimeout(Duration.ofDays(1));
         return factory;
     }
 }
