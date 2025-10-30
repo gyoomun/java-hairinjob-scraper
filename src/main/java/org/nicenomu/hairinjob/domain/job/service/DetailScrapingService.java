@@ -44,7 +44,7 @@ public class DetailScrapingService {
         for (int i = 0; i < jobs.size(); i++) {
             JobPostingEntity job = jobs.get(i);
 
-            log.info("[{}/{}] idx={} 스크래핑 중...", i + 1, jobs.size(), job.getIdx());
+            log.info("[{}/{}] idx={} - {} 스크래핑 중...", i + 1, jobs.size(), job.getIdx(), job.getTitle());
 
             try {
                 // 쿠키 갱신 체크 (20분마다)
@@ -76,7 +76,13 @@ public class DetailScrapingService {
                         detailInfo.getRecruiterContact()
                 );
 
+                // 상세 정보 로그 출력
                 log.info("  ✓ idx={} 완료", job.getIdx());
+                log.info("    - 담당자: {}", detailInfo.getRecruiterName() != null ? detailInfo.getRecruiterName() : "없음");
+                log.info("    - 담당자연락처: {}", detailInfo.getRecruiterContact() != null ? detailInfo.getRecruiterContact() : "없음");
+                log.info("    - 회사주소: {}", detailInfo.getCompanyAddress() != null ? detailInfo.getCompanyAddress() : "없음");
+                log.info("    - 회사연락처: {}", detailInfo.getCompanyPhone() != null ? detailInfo.getCompanyPhone() : "없음");
+                log.info("    - 상세요강 전화번호: {}", detailInfo.getPhone() != null ? detailInfo.getPhone() : "없음");
 
                 // 랜덤 딜레이
                 if (i < jobs.size() - 1) {
