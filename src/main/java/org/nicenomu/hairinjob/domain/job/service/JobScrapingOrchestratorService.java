@@ -10,6 +10,7 @@ import org.nicenomu.hairinjob.domain.job.repository.JobPostingRepository;
 import org.nicenomu.hairinjob.domain.job.repository.ScrapeSessionRepository;
 import org.nicenomu.hairinjob.infrastructure.browser.PlaywrightManager;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -30,7 +31,6 @@ public class JobScrapingOrchestratorService {
     private final ScrapeSessionRepository sessionRepository;
     private final JobPostingRepository jobPostingRepository;
 
-    @Transactional
     public void scrapeAll(boolean skipPages, String storage) {
         LocalDateTime startTime = LocalDateTime.now();
         log.info("\n{'='*80}");
@@ -64,24 +64,20 @@ public class JobScrapingOrchestratorService {
                 // 4. 페이지 범위 분할 (10개 워커)
                 List<int[]> ranges = dividePages(totalPages, GlobalConstants.DEFAULT_COOKIE_WORKERS);
 
-                // 5. 병렬 스크래핑
+                // 5. 병렬 스크래핑 (각 페이지마다 즉시 DB 저장됨)
                 log.info("\n[4단계] 병렬 페이지 스크래핑 시작...");
                 allJobs = scrapeParallel(cookies, ranges, session);
 
-                // 6. 데이터베이스 저장
-                log.info("\n[5단계] 데이터베이스 저장 중...");
-                saveJobs(allJobs, session);
-
-                // 7. 세션 완료
-                session.complete(allJobs.size(), allJobs.size(), 0);
-                sessionRepository.save(session);
+                // 6. 세션 완료
+                log.info("\n[5단계] 세션 완료 처리 중...");
+                completeSession(session, allJobs.size());
             }
 
-            // 8. 상세페이지 스크래핑
+            // 7. 상세페이지 스크래핑
             log.info("\n[6단계] 상세페이지 스크래핑...");
             detailScrapingService.scrapeAllDetailPages(cookies);
 
-            // 9. 종료
+            // 8. 종료
             LocalDateTime endTime = LocalDateTime.now();
             Duration duration = Duration.between(startTime, endTime);
             long minutes = duration.toMinutes();
@@ -101,7 +97,8 @@ public class JobScrapingOrchestratorService {
         }
     }
 
-    private ScrapeSessionEntity createSession() {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected ScrapeSessionEntity createSession() {
         ScrapeSessionEntity session = ScrapeSessionEntity.builder()
                 .startedAt(LocalDateTime.now())
                 .numCookies(GlobalConstants.DEFAULT_COOKIE_WORKERS)
@@ -166,19 +163,11 @@ public class JobScrapingOrchestratorService {
         return allJobs;
     }
 
-    @Transactional
-    protected void saveJobs(List<JobPostingDTO> jobs, ScrapeSessionEntity session) {
-        int saved = 0;
-        for (JobPostingDTO dto : jobs) {
-            try {
-                JobPostingEntity entity = dto.toEntity(session);
-                jobPostingRepository.save(entity);
-                saved++;
-            } catch (Exception e) {
-                log.warn("데이터 저장 실패: idx={}", dto.getIdx(), e);
-            }
-        }
-        log.info("✓ {}개 / {}개 저장 완료", saved, jobs.size());
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void completeSession(ScrapeSessionEntity session, int totalJobs) {
+        session.complete(totalJobs, totalJobs, 0);
+        sessionRepository.save(session);
+        log.info("✓ 세션 완료: {}개 수집", totalJobs);
     }
 
     public void collectCookies() {

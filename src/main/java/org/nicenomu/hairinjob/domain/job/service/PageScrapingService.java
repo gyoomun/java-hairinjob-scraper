@@ -5,10 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.nicenomu.hairinjob.common.config.ScraperProperties;
 import org.nicenomu.hairinjob.common.util.GlobalConstants;
 import org.nicenomu.hairinjob.domain.job.model.dto.JobPostingDTO;
+import org.nicenomu.hairinjob.domain.job.model.entity.JobPostingEntity;
 import org.nicenomu.hairinjob.domain.job.model.entity.ScrapeSessionEntity;
+import org.nicenomu.hairinjob.domain.job.repository.JobPostingRepository;
 import org.nicenomu.hairinjob.infrastructure.http.HttpClientService;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +27,7 @@ public class PageScrapingService {
 
     private final HttpClientService httpClientService;
     private final HtmlParserService htmlParserService;
+    private final JobPostingRepository jobPostingRepository;
     private final ScraperProperties scraperProperties;
     private final Random random = new Random();
 
@@ -70,6 +75,10 @@ public class PageScrapingService {
 
                 log.info("  [{}] 페이지 {} 완료: {}개 항목", cookieIdx, pageNum, jobs.size());
 
+                // 페이지 단위로 즉시 DB 저장 (Python과 동일)
+                saveJobsImmediately(jobs, session);
+                log.info("  [{}] 페이지 {} DB 저장 완료", cookieIdx, pageNum);
+
                 // 랜덤 딜레이
                 if (pageNum < endPage) {
                     int delay = scraperProperties.getRequestDelayMinMs()
@@ -98,6 +107,20 @@ public class PageScrapingService {
         } catch (Exception e) {
             log.error("페이지 수 감지 실패", e);
             throw new RuntimeException("페이지 수 감지 실패", e);
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void saveJobsImmediately(List<JobPostingDTO> jobs, ScrapeSessionEntity session) {
+        int saved = 0;
+        for (JobPostingDTO dto : jobs) {
+            try {
+                JobPostingEntity entity = dto.toEntity(session);
+                jobPostingRepository.save(entity);
+                saved++;
+            } catch (Exception e) {
+                log.warn("  데이터 저장 실패: idx={}", dto.getIdx(), e);
+            }
         }
     }
 }
