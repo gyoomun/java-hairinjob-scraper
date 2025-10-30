@@ -50,13 +50,19 @@ public class PageScrapingService {
                 log.info("  [{}] [{}/{}] 페이지 {} 스크래핑 중... ({:.1f}%)",
                         cookieIdx, currentIndex, totalPages, pageNum, progress);
 
-                // URL 구성
-                String url = (pageNum == 1)
-                        ? GlobalConstants.LIST_PAGE_URL
-                        : GlobalConstants.LIST_PAGE_URL + "?page=" + pageNum;
+                // URL 및 Referer 구성
+                String url;
+                String referer;
+                if (pageNum == 1) {
+                    url = GlobalConstants.LIST_PAGE_URL;
+                    referer = GlobalConstants.LIST_PAGE_URL;
+                } else {
+                    url = GlobalConstants.LIST_PAGE_URL + "?page=" + pageNum;
+                    referer = GlobalConstants.LIST_PAGE_URL + "?page=" + (pageNum - 1);
+                }
 
                 // HTML 가져오기
-                String html = httpClientService.get(url, cookies);
+                String html = httpClientService.get(url, cookies, referer);
 
                 // 파싱
                 List<JobPostingDTO> jobs = htmlParserService.parseJobListings(html, pageNum, cookieIdx - 1);

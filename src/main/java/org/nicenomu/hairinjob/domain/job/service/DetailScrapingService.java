@@ -3,6 +3,7 @@ package org.nicenomu.hairinjob.domain.job.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nicenomu.hairinjob.common.config.ScraperProperties;
+import org.nicenomu.hairinjob.common.util.GlobalConstants;
 import org.nicenomu.hairinjob.domain.job.model.dto.DetailInfoDTO;
 import org.nicenomu.hairinjob.domain.job.model.entity.JobPostingEntity;
 import org.nicenomu.hairinjob.domain.job.repository.JobPostingRepository;
@@ -60,8 +61,8 @@ public class DetailScrapingService {
                     log.info("▶️  상세페이지 스크래핑 재개");
                 }
 
-                // HTML 가져오기
-                String html = httpClientService.get(job.getDetailUrl(), cookies);
+                // HTML 가져오기 (Referer는 목록 페이지)
+                String html = httpClientService.get(job.getDetailUrl(), cookies, GlobalConstants.LIST_PAGE_URL);
 
                 // 파싱
                 DetailInfoDTO detailInfo = htmlParserService.parseDetailPage(html, job.getIdx());
