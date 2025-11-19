@@ -44,3 +44,4 @@ playwright-data/
 ### Logs ###
 logs/
 *.log
+error-logs/
