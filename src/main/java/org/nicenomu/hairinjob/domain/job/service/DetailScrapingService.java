@@ -25,14 +25,13 @@ import java.util.Random;
 public class DetailScrapingService {
 
     private final JobPostingRepository jobPostingRepository;
-    private final HttpClientService httpClientService;
     private final HtmlParserService htmlParserService;
     private final PlaywrightManager playwrightManager;
     private final ScraperProperties scraperProperties;
     private final Random random = new Random();
 
     @Transactional
-    public void scrapeAllDetailPages(Map<String, String> cookies) {
+    public void scrapeAllDetailPages() {
         List<JobPostingEntity> jobs = jobPostingRepository.findAllDetailUrlsFromLatestSession();
 
         log.info("\n상세페이지 스크래핑 시작: 총 {}개", jobs.size());
@@ -53,24 +52,15 @@ public class DetailScrapingService {
                     log.info("\n🔄 쿠키 갱신 필요 ({}분 경과)", scraperProperties.getCookieRefreshIntervalMinutes());
                     log.info("⏸️  상세페이지 스크래핑 일시 중지 - 로그인 유지 쿠키 보존 절차 시작");
 
-                    // PlaywrightManager에서 쿠키 재갱신 (새로고침 + 로그인 확인 + 재로그인 + 쿠키 추출)
-                    Map<String, String> refreshedCookies = playwrightManager.refreshCookies();
-                    cookies.clear();
-                    cookies.putAll(refreshedCookies);
-
-                    // 쿠키 갱신 확인 로그
-                    log.info("✓ 쿠키 교체 완료 - 현재 cookies Map 크기: {}", cookies.size());
-                    log.info("  주요 쿠키: PHPSESSID={}", cookies.getOrDefault("PHPSESSID", "없음"));
+                    // PlaywrightManager에서 쿠키 재갱신
+                    playwrightManager.refreshCookies();
 
                     lastCookieRefresh = Instant.now();
                     log.info("▶️  상세페이지 스크래핑 재개");
                 }
 
-                // HTML 가져오기 (Referer는 목록 페이지)
-                String html = httpClientService.get(job.getDetailUrl(), cookies, GlobalConstants.LIST_PAGE_URL);
-
-                // HTML 크기 로그 (디버깅용)
-                log.info("  HTML 크기: {}자", html.length());
+                // Playwright APIRequest로 HTML 가져오기 (브라우저 컨텍스트의 쿠키 자동 사용)
+                String html = playwrightManager.fetchHtmlWithPlaywright(job.getDetailUrl(), GlobalConstants.LIST_PAGE_URL);
 
                 // 파싱
                 DetailInfoDTO detailInfo = htmlParserService.parseDetailPage(html, job.getIdx());

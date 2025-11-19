@@ -9,7 +9,7 @@ import org.nicenomu.hairinjob.domain.job.model.dto.JobPostingDTO;
 import org.nicenomu.hairinjob.domain.job.model.entity.JobPostingEntity;
 import org.nicenomu.hairinjob.domain.job.model.entity.ScrapeSessionEntity;
 import org.nicenomu.hairinjob.domain.job.repository.JobPostingRepository;
-import org.nicenomu.hairinjob.infrastructure.http.HttpClientService;
+import org.nicenomu.hairinjob.infrastructure.browser.PlaywrightManager;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class PageScrapingService {
 
-    private final HttpClientService httpClientService;
+    private final PlaywrightManager playwrightManager;
     private final HtmlParserService htmlParserService;
     private final JobPostingRepository jobPostingRepository;
     private final ScraperProperties scraperProperties;
@@ -35,7 +35,6 @@ public class PageScrapingService {
     @Async("scraperTaskExecutor")
     public CompletableFuture<List<JobPostingDTO>> scrapePagesAsync(
             int cookieIdx,
-            Map<String, String> cookies,
             int startPage,
             int endPage,
             ScrapeSessionEntity session
@@ -67,8 +66,8 @@ public class PageScrapingService {
                     referer = GlobalConstants.LIST_PAGE_URL + "?page=" + (pageNum - 1);
                 }
 
-                // HTML 가져오기
-                String html = httpClientService.get(url, cookies, referer);
+                // HTML 가져오기 (Playwright APIRequest 사용)
+                String html = playwrightManager.fetchHtmlWithPlaywright(url, referer);
 
                 // 파싱
                 List<JobPostingDTO> jobs = htmlParserService.parseJobListings(html, pageNum, cookieIdx - 1);
@@ -99,10 +98,10 @@ public class PageScrapingService {
         }
     }
 
-    public int detectTotalPages(Map<String, String> cookies) {
+    public int detectTotalPages() {
         try {
             log.info("전체 페이지 수 감지 중...");
-            String html = httpClientService.get(GlobalConstants.LIST_PAGE_URL, cookies);
+            String html = playwrightManager.fetchHtmlWithPlaywright(GlobalConstants.LIST_PAGE_URL, GlobalConstants.LIST_PAGE_URL);
             int totalPages = htmlParserService.getLastPageNumber(html);
             log.info("✓ 전체 페이지 수: {}", totalPages);
             return totalPages;

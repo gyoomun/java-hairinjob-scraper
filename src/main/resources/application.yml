@@ -48,6 +48,6 @@ scraper:
   browser:
     user-data-dir: ${USER_DATA_DIR:./playwright-data}
     headless: ${HEADLESS:false}
-  cookie-refresh-interval-minutes: 5
+  cookie-refresh-interval-minutes: 3
   request-delay-min-ms: 1000  # 300ms → 1000ms (Python과 동일)
   request-delay-max-ms: 3000  # 1000ms → 3000ms (Python과 동일)

@@ -46,9 +46,9 @@ public class JobScrapingOrchestratorService {
         }
 
         try {
-            // 1. Playwright 브라우저 초기화 및 쿠키 추출
+            // 1. Playwright 브라우저 초기화 및 로그인
             log.info("\n[1단계] 브라우저 초기화 및 로그인...");
-            Map<String, String> cookies = playwrightManager.initializeAndGetCookies();
+            playwrightManager.initializeAndGetCookies();
 
             ScrapeSessionEntity session = null;
             List<JobPostingDTO> allJobs = new ArrayList<>();
@@ -63,14 +63,14 @@ public class JobScrapingOrchestratorService {
 
                 // 3. 전체 페이지 수 감지
                 log.info("\n[3단계] 전체 페이지 수 감지...");
-                int totalPages = pageScrapingService.detectTotalPages(cookies);
+                int totalPages = pageScrapingService.detectTotalPages();
 
                 // 4. 페이지 범위 분할 (10개 워커)
                 List<int[]> ranges = dividePages(totalPages, GlobalConstants.DEFAULT_COOKIE_WORKERS);
 
                 // 5. 병렬 스크래핑 (각 페이지마다 즉시 DB 저장됨)
                 log.info("\n[4단계] 병렬 페이지 스크래핑 시작...");
-                allJobs = scrapeParallel(cookies, ranges, session);
+                allJobs = scrapeParallel(ranges, session);
 
                 // 6. 세션 완료
                 log.info("\n[5단계] 세션 완료 처리 중...");
@@ -79,7 +79,7 @@ public class JobScrapingOrchestratorService {
 
             // 7. 상세페이지 스크래핑
             log.info("\n[6단계] 상세페이지 스크래핑...");
-            detailScrapingService.scrapeAllDetailPages(cookies);
+            detailScrapingService.scrapeAllDetailPages();
 
             // 8. 종료
             LocalDateTime endTime = LocalDateTime.now();
@@ -130,7 +130,6 @@ public class JobScrapingOrchestratorService {
     }
 
     private List<JobPostingDTO> scrapeParallel(
-            Map<String, String> cookies,
             List<int[]> ranges,
             ScrapeSessionEntity session
     ) {
@@ -140,7 +139,7 @@ public class JobScrapingOrchestratorService {
             int[] range = ranges.get(i);
             int cookieIdx = i + 1;
             CompletableFuture<List<JobPostingDTO>> future = pageScrapingService.scrapePagesAsync(
-                    cookieIdx, cookies, range[0], range[1], session
+                    cookieIdx, range[0], range[1], session
             );
             futures.add(future);
         }
@@ -177,11 +176,10 @@ public class JobScrapingOrchestratorService {
     }
 
     public void collectCookies() {
-        log.info("Playwright 브라우저 실행 및 쿠키 수집...");
+        log.info("Playwright 브라우저 실행 및 로그인 확인...");
         try {
-            Map<String, String> cookies = playwrightManager.initializeAndGetCookies();
-            log.info("✓ 쿠키 수집 완료: {}개", cookies.size());
-            cookies.forEach((key, value) -> log.info("  {} = {}", key, value));
+            playwrightManager.initializeAndGetCookies();
+            log.info("✓ 브라우저 초기화 및 로그인 완료");
         } finally {
             playwrightManager.closeBrowser();
         }
@@ -190,13 +188,13 @@ public class JobScrapingOrchestratorService {
     public void testPage() {
         log.info("1페이지 테스트 시작...");
         try {
-            Map<String, String> cookies = playwrightManager.initializeAndGetCookies();
-            int totalPages = pageScrapingService.detectTotalPages(cookies);
+            playwrightManager.initializeAndGetCookies();
+            int totalPages = pageScrapingService.detectTotalPages();
             log.info("✓ 전체 페이지 수: {}", totalPages);
 
             // 1페이지만 스크래핑
             CompletableFuture<List<JobPostingDTO>> future = pageScrapingService.scrapePagesAsync(
-                    1, cookies, 1, 1, null
+                    1, 1, 1, null
             );
             List<JobPostingDTO> jobs = future.get();
             log.info("✓ 1페이지 수집 완료: {}개", jobs.size());
@@ -212,7 +210,7 @@ public class JobScrapingOrchestratorService {
     public void testDetail() {
         log.info("상세페이지 테스트 시작 (idx=101200)...");
         try {
-            Map<String, String> cookies = playwrightManager.initializeAndGetCookies();
+            playwrightManager.initializeAndGetCookies();
 
             // TODO: 실제 상세페이지 URL 조회 필요
             log.warn("TODO: 상세페이지 테스트 기능 구현 필요");

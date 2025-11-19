@@ -226,6 +226,54 @@ public class PlaywrightManager {
         log.info("✓ 브라우저 종료 완료");
     }
 
+    /**
+     * Playwright의 APIRequest를 사용하여 HTTP GET 요청
+     * 브라우저 컨텍스트의 쿠키와 세션이 자동으로 포함됨
+     */
+    public String fetchHtmlWithPlaywright(String url, String referer) {
+        if (context == null) {
+            throw new IllegalStateException("BrowserContext가 초기화되지 않았습니다.");
+        }
+
+        try {
+            APIRequestContext apiRequestContext = playwright.request().newContext(
+                    new APIRequest.NewContextOptions()
+                            .setBaseURL(GlobalConstants.BASE_URL)
+                            .setExtraHTTPHeaders(Map.of(
+                                    "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                                    "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                                    "Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+                                    "Accept-Encoding", "gzip, deflate, br",
+                                    "Connection", "keep-alive",
+                                    "Upgrade-Insecure-Requests", "1",
+                                    "Referer", referer != null ? referer : GlobalConstants.BASE_URL
+                            ))
+                            .setStorageState(context.storageState())  // 브라우저 컨텍스트의 쿠키 사용
+            );
+
+            APIResponse response = apiRequestContext.get(url);
+
+            if (!response.ok()) {
+                throw new RuntimeException("HTTP 요청 실패: " + response.status() + " " + response.statusText());
+            }
+
+            // euc-kr 인코딩으로 변환
+            byte[] bodyBytes = response.body();
+            String html = new String(bodyBytes, "euc-kr");
+
+            apiRequestContext.dispose();
+            return html;
+
+        } catch (Exception e) {
+            log.error("Playwright HTTP 요청 실패: {}", url, e);
+            throw new RuntimeException("Playwright HTTP 요청 실패", e);
+        }
+    }
+
+    public BrowserContext getContext() {
+        return context;
+    }
+
     public boolean isBrowserOpen() {
         return browser != null && browser.isConnected();
     }
